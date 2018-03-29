@@ -1,0 +1,10 @@
+---
+# defaults file for nginx-load-balancer
+
+software:
+  - nginx
+  - firewalld
+  - telnet
+  
+configfiles:
+  - README.md

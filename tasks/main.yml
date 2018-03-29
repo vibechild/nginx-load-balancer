@@ -1,0 +1,59 @@
+---
+# tasks file for nginx-load-balancer
+
+- name: INSTALL Software for load balancing
+  yum: name={{item}} state=installed
+  with_items: '{{software}}'
+  tags: setup
+
+- name: Config nginx conf.d with template
+  template:
+    src: "{{item}}"
+    dest: "/etc/nginx/conf.d/{{item}}"
+    validate: "echo 'http { include \'%s\'; }' > /tmp/n && nginx -t -c /tmp/n"
+  with_items: '{{configfiles}}'
+  notify:
+  - restart nginx
+  tags: configure
+
+- name: Modify the /var/log/nginx permissions
+  file: dest=/var/log/nginx mode=0750 group='level 2 support' owner=nginx
+  tags: setup
+
+# Require SELinux to be in enforcing mode, Load balancers are generally
+# exposed to the internet and we should expect all types of attacks
+# Don't turn this off, or the firewall
+- name: Enforce SELinux usage
+  selinux:
+    policy: targeted
+    state: enforcing
+  tags: setup
+- name: Make sure we can use selinux modules
+  yum: name=libsemanage-python state=installed
+  tags: setup
+- name: Configure SELinux to allow what is necessary
+  seboolean: name="{{item}}" state=yes persistent=yes
+  with_items:
+    - httpd_can_network_connect
+  tags: setup
+
+###############################################################################
+# Configure firewall rules
+- name: Make sure firewall service is installed
+  yum: name=firewalld state=present
+  tags: setup
+- name: Make sure firewall service is running
+  service: name=firewalld enabled=yes state=started
+  tags: setup
+- name: Check and add firewall services
+  firewalld: service={{ item }} permanent=true state=enabled
+  with_items:
+    - http
+    - https
+  notify: restart firewalld
+  tags: setup
+# - name: Check and open additional firewall ports
+#   firewalld: port={{ item }} permanent=true state=enabled
+#   with_items:
+#     - 5252/tcp
+#     - 161/udp
