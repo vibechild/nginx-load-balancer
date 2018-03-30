@@ -21,11 +21,11 @@ This role does not require any other roles.
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Just call the role.  All variables are optional:
 
     - hosts: servers
       roles:
-         - { role: username.rolename, x: 42 }
+         - { role: nginx-load-balancer, x: 42 }
 
 
 Author Information
